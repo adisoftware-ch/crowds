@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { HomePage } from './home.page';
+import { CrowdPlaygroundComponent } from '../crowd-playground/crowd-playground.component';
 
 @NgModule({
   imports: [
@@ -18,6 +19,9 @@ import { HomePage } from './home.page';
       }
     ])
   ],
-  declarations: [HomePage]
+  declarations: [
+    HomePage,
+    CrowdPlaygroundComponent
+  ]
 })
 export class HomePageModule {}
