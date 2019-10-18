@@ -5,7 +5,10 @@
 <canvas #crowdPlayground></canvas>
 
 <ion-toolbar id="bottom-toolbar">
-  <ion-buttons left>
+  <ion-buttons slot="start">
     <button color="dark" ion-button icon-only (click)="clearCanvas()"><ion-icon name="trash"></ion-icon></button>
+  </ion-buttons>
+  <ion-buttons slot="end">
+    <button ion-button (click)="startCrowd()">Start</button>
   </ion-buttons>
 </ion-toolbar>
