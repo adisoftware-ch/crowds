@@ -1,6 +1,6 @@
-<ion-toolbar id="top-toolbar">
-
-</ion-toolbar>
+population: {{ctrPopulation}}<br/>
+births: {{ctrBirths}}<br/>
+deaths: {{ctrDeaths}}
 
 <canvas #crowdPlayground></canvas>
 
@@ -9,6 +9,7 @@
     <button color="dark" ion-button icon-only (click)="clearCanvas()"><ion-icon name="trash"></ion-icon></button>
   </ion-buttons>
   <ion-buttons slot="end">
+    <button *ngIf="running" ion-button (click)="stopCrowd()">Stop</button>
     <button ion-button (click)="startCrowd()">Start</button>
   </ion-buttons>
 </ion-toolbar>

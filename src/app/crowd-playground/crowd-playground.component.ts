@@ -15,18 +15,38 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
   width: number;
   height: number;
 
-  males: Array<Square>;
-  females: Array<Square>;
+  males: Map<string, Square>;
+  females: Map<string, Square>;
+
+  ctrDeaths = 0;
+  ctrBirths = 0;
+  ctrPopulation = 0;
+
+  running: any;
+
+  // parameters
+  size = 3;
+  startno = 20;
+  pairingage = 5;
+  maxage = 100;
+  minage = 70;
+  moverange = 3;
+  speed = 50;
+  attractionrange = 3;
+  attractionpossibility = 20;
 
   constructor(public platform: Platform, private renderer: Renderer2) {
     console.log('CrowdPlaygroundComponent starting up');
+
+    this.males = new Map();
+    this.females = new Map();
   }
 
   ngAfterViewInit() {
     this.canvasElement = this.canvas.nativeElement;
 
-    this.width = this.platform.width();
-    this.height = this.platform.height() - 200;
+    this.width = Math.round(this.platform.width() / this.size) * this.size;
+    this.height = Math.round((this.platform.height() - 120) / this.size) * this.size;
 
     this.renderer.setAttribute(this.canvasElement, 'width', this.width + '');
     this.renderer.setAttribute(this.canvasElement, 'height', this.height + '');
@@ -35,15 +55,19 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
   clearCanvas() {
     const ctx = this.canvasElement.getContext('2d');
     ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+
+    this.ctrDeaths = 0;
+    this.ctrBirths = 0;
+    this.ctrPopulation = 0;
+
+    this.males = new Map();
+    this.females = new Map();
   }
 
   startCrowd() {
     this.clearCanvas();
 
-    this.males = new Array();
-    this.females = new Array();
-
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < this.startno; i++) {
       this.addChild(0);
       this.addChild(1);
     }
@@ -52,29 +76,72 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
 
   }
 
-  move() {
-    setInterval(() => {
-      for (let i = 0; i < this.males.length; i++) {
-        this.males[i].move(1, this.random(1, 4));
-      }
-      for (let i = 0; i < this.females.length; i++) {
-        this.females[i].move(1, this.random(1, 4));
-      }
-      this.handleCollision();
-    }, 200);
+  stopCrowd() {
+    if (this.running) {
+      clearInterval(this.running);
+      this.running = false;
+    }
   }
 
-  handleCollision() {
-    for (let i = 0; i < this.males.length; i++) {
-      for (let j = 0; j < this.females.length; j++) {
-        if (this.males[i].collides(this.females[j])) {
-          if (this.males[i].age > 5 && this.females[j].age > 5) {
-            const child = this.addChild(this.random(1, 2), this.males[i].x, this.males[i].y);
-            console.log('a new child is born! Its a ' + (child.color === 'red' ? 'boy!' : 'girl!'));
+  move() {
+    this.running = setInterval(() => {
+     // console.log('no. of males:', this.males.size);
+     // console.log('no. of females:', this.females.size);
+
+      let collisioncounter = 1;
+      this.males.forEach((value: Square, key: string) => {
+        if (value.age > this.maxage - this.random(1, this.maxage - this.minage)) {
+          console.log('a male died!');
+          this.ctrDeaths++;
+          this.ctrPopulation--;
+          value.die();
+          this.males.delete(key);
+        } else {
+          value.move(this.random(1, this.moverange), this.random(1, 4));
+          // check collision with same gender
+          const tmpkey = value.x + '_' + value.y;
+          key = this.males.get(tmpkey) ? (collisioncounter++) + '_' + tmpkey : tmpkey;
+        }
+      });
+
+      this.females.forEach((value: Square, key: string) => {
+        if (value.age > this.maxage - this.random(1, this.maxage - this.minage)) {
+          console.log('a female died!');
+          this.ctrDeaths++;
+          this.ctrPopulation--;
+          value.die();
+          this.females.delete(key);
+        } else {
+          value.move(this.random(1, this.moverange), this.random(1, 4));
+          // check collision with same gender
+          const tmpkey = value.x + '_' + value.y;
+          key = this.females.get(tmpkey) ? (collisioncounter++) + '_' + tmpkey : tmpkey;
+          // check collision with males => are children on the way?
+          const male = this.findMale(value.x, value.y);
+          if (male) {
+            if (value.age > this.pairingage && male.age > this.pairingage && this.attractionpossibility >= this.random(0, 100)) {
+              const child = this.addChild(this.random(1, 2), male.x, male.y);
+              this.ctrBirths++;
+              console.log('a new child is born! Its a ' + (child.color === 'red' ? 'boy!' : 'girl!'));
+            }
+            male.overlapWith(value);
           }
+        }
+      });
+
+    }, 100 - this.speed);
+  }
+
+  findMale(x: number, y: number): Square {
+    for (let i = x - this.attractionrange; i <= x + this.attractionrange; i++) {
+      for (let j = y - this.attractionrange; j <= y + this.attractionrange; j++) {
+        const male = this.males.get(i + '_' + j);
+        if (male) {
+          return male;
         }
       }
     }
+    return null;
   }
 
   random(min: number, max: number): number {
@@ -84,35 +151,43 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
   addChild(sex: number, x?: number, y?: number): Square {
     const ctx = this.canvasElement.getContext('2d');
 
-    const size = 20;
+    const boundX = this.width / this.size - 1;
+    const boundY = this.height / this.size - 1;
 
-    const boundX = this.width / size - 1;
-    const boundY = this.height / size - 1;
-
-    let square = new Square(
+    const square = new Square(
       ctx, boundX, boundY,
       x ? x : this.random(0, boundX),
-      y ? y: this.random(0, boundY),
-      size,
+      y ? y : this.random(0, boundY),
+      this.size,
       sex === 1 ? 'red' : 'black');
 
+    const key: string = square.x + '_' + square.y;
     if (sex === 1) {
-      this.males.push(square);
+      this.males.set(key, square);
     } else {
-      this.females.push(square);
+      this.females.set(key, square);
     }
 
     square.draw();
+    this.ctrPopulation++;
 
     return square;
   }
 
 }
 
-export class Square {
-
+export class Point {
   x: number;
   y: number;
+
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
+export class Square extends Point {
+
   size: number;
   color: string;
 
@@ -121,9 +196,11 @@ export class Square {
 
   age: number;
 
+  overlap: Square;
+
   constructor(private ctx: CanvasRenderingContext2D, boundsX: number, boundsY: number, x: number, y: number, size: number, color?: string) {
-    this.x = x
-    this.y = y;
+    super(x, y);
+
     this.size = size;
     this.color = color;
 
@@ -144,10 +221,16 @@ export class Square {
 
   clear() {
     this.ctx.clearRect(this.size * this.x, this.size * this.y, this.size, this.size);
+    if (this.overlap) {
+      if (this.overlap.x === this.x && this.overlap.y === this.y) {
+        this.overlap.draw();
+      }
+    }
   }
 
   move(steps: number, dir: number) {
     this.clear();
+    this.overlap = null;
 
     switch (dir) {
       case 1: this.x = this.x + steps; break;
@@ -161,8 +244,12 @@ export class Square {
     this.age = this.age + 1;
   }
 
-  collides(other: Square): boolean {
-    return this.x === other.x && this.y === other.y;
+  die() {
+    this.clear();
+  }
+
+  overlapWith(other: Square) {
+    this.overlap = other;
   }
 
   private checkBounds() {
