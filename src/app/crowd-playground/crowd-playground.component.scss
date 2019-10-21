@@ -2,9 +2,14 @@ crowd-playground {
 
     height: 100%;
     width: 100%;
-    display: block;
 
-    #top-toolbar{
+    #crowdPlayground {
+        height: 100%;
+        width: 100%;
+    }
+
+    #infobar {
+        background: rgba(255,255,255,0.5);
         position: absolute;
         top: 0;
     }

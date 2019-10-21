@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 
 import { HomePage } from './home.page';
 import { CrowdPlaygroundComponent } from '../crowd-playground/crowd-playground.component';
+import { CrowdSettingsComponent } from '../crowd-settings/crowd-settings.component';
 
 @NgModule({
   imports: [
@@ -21,7 +22,9 @@ import { CrowdPlaygroundComponent } from '../crowd-playground/crowd-playground.c
   ],
   declarations: [
     HomePage,
-    CrowdPlaygroundComponent
-  ]
+    CrowdPlaygroundComponent,
+    CrowdSettingsComponent
+  ],
+  entryComponents: [ CrowdSettingsComponent ]
 })
 export class HomePageModule {}

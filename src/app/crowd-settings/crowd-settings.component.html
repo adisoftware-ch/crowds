@@ -1,0 +1,67 @@
+<ion-list>
+  <ion-item>
+    <ion-label position="floating">
+      Creature Size (Diameter)
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.size" type="number" min="2" max="20"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Max Age
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.maxage" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Min Age (for dying)
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.minage" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Action Radius (move)
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.moverange" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Min Age for Pairing
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.pairingage" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Attraction Range
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.attractionrange" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Attraction Possibility (%)
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.attractionpossibility" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+  <ion-item>
+    <ion-label position="floating">
+      Speed (1 - 100)
+    </ion-label>
+    <ion-input>
+      <ion-input [(ngModel)]="settings.speed" type="number"></ion-input>
+    </ion-input>
+  </ion-item>
+</ion-list>
+<ion-button expand="block" (click)="closePopover()">Close</ion-button>

@@ -1,15 +1,20 @@
-population: {{ctrPopulation}}<br/>
-births: {{ctrBirths}}<br/>
-deaths: {{ctrDeaths}}
+<ion-card id="infobar">
+  <ion-row>
+    <ion-col>
+      <ion-button size="small" *ngIf="!running" (click)="startCrowd()">Start</ion-button>
+      <ion-button size="small" *ngIf="running" (click)="stopCrowd()">Stop</ion-button>
+    </ion-col>
+    <ion-col>
+      year: {{ctrYear}}<br/>
+      alive: {{ctrPopulation}}<br/>
+      born: {{ctrBirths}}<br/>
+      dead: {{ctrDeaths}}
+    </ion-col>
+    <ion-col>
+      <ion-button size="small" (click)="clearCanvas()" class="ion-float-right" *ngIf="!running && !cleared">Clear</ion-button>
+      <ion-button size="small" (click)="showSettings($event)" class="ion-float-right" *ngIf="!running && cleared">Settings</ion-button>
+    </ion-col>
+  </ion-row>
+</ion-card>
 
-<canvas #crowdPlayground></canvas>
-
-<ion-toolbar id="bottom-toolbar">
-  <ion-buttons slot="start">
-    <button color="dark" ion-button icon-only (click)="clearCanvas()"><ion-icon name="trash"></ion-icon></button>
-  </ion-buttons>
-  <ion-buttons slot="end">
-    <button *ngIf="running" ion-button (click)="stopCrowd()">Stop</button>
-    <button ion-button (click)="startCrowd()">Start</button>
-  </ion-buttons>
-</ion-toolbar>
+<canvas id="crowdPlayground" #crowdPlayground></canvas>

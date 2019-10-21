@@ -1,5 +1,7 @@
 import { Component, AfterViewInit, ViewChild, Renderer2 } from '@angular/core';
-import { Platform } from '@ionic/angular';
+import { Platform, PopoverController } from '@ionic/angular';
+
+import { CrowdSettingsComponent, Settings } from '../crowd-settings/crowd-settings.component';
 
 @Component({
   selector: 'crowd-playground',
@@ -18,38 +20,63 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
   males: Map<string, Square>;
   females: Map<string, Square>;
 
+  ctrYear = 0;
   ctrDeaths = 0;
   ctrBirths = 0;
   ctrPopulation = 0;
 
   running: any;
+  cleared: boolean;
 
   // parameters
-  size = 3;
-  startno = 20;
-  pairingage = 5;
-  maxage = 100;
-  minage = 70;
-  moverange = 3;
-  speed = 50;
-  attractionrange = 3;
-  attractionpossibility = 20;
+  settings: Settings = {
+    size: 3,
+    startno: 20,
+    pairingage: 5,
+    maxage: 100,
+    minage: 70,
+    moverange: 3,
+    speed: 50,
+    attractionrange: 3,
+    attractionpossibility: 20
+  };
 
-  constructor(public platform: Platform, private renderer: Renderer2) {
+  constructor(public platform: Platform, private renderer: Renderer2, private popoverController: PopoverController) {
     console.log('CrowdPlaygroundComponent starting up');
 
     this.males = new Map();
     this.females = new Map();
+
+    this.cleared = true;
   }
 
   ngAfterViewInit() {
     this.canvasElement = this.canvas.nativeElement;
 
-    this.width = Math.round(this.platform.width() / this.size) * this.size;
-    this.height = Math.round((this.platform.height() - 120) / this.size) * this.size;
+    this.width = Math.round(this.platform.width() / this.settings.size) * this.settings.size;
+    this.height = Math.round((this.platform.height() - 100) / this.settings.size) * this.settings.size;
 
     this.renderer.setAttribute(this.canvasElement, 'width', this.width + '');
     this.renderer.setAttribute(this.canvasElement, 'height', this.height + '');
+  }
+
+  async showSettings(ev: any) {
+    const popover = await this.popoverController.create({
+      component: CrowdSettingsComponent,
+      event: ev,
+      translucent: true,
+      componentProps: {
+        settings: this.settings
+      }
+    });
+
+    popover.onDidDismiss().then((settings) => {
+      if (settings && settings.data) {
+        this.settings = settings.data;
+      }
+    });
+
+    return await popover.present();
   }
 
   clearCanvas() {
@@ -59,17 +86,22 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
     this.ctrDeaths = 0;
     this.ctrBirths = 0;
     this.ctrPopulation = 0;
+    this.ctrYear = 0;
 
     this.males = new Map();
     this.females = new Map();
+
+    this.cleared = true;
   }
 
   startCrowd() {
-    this.clearCanvas();
+    if (this.cleared) {
+      for (let i = 0; i < this.settings.startno; i++) {
+        this.addChild(0);
+        this.addChild(1);
+      }
 
-    for (let i = 0; i < this.startno; i++) {
-      this.addChild(0);
-      this.addChild(1);
+      this.cleared = false;
     }
 
     this.move();
@@ -85,19 +117,12 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
 
   move() {
     this.running = setInterval(() => {
-     // console.log('no. of males:', this.males.size);
-     // console.log('no. of females:', this.females.size);
-
       let collisioncounter = 1;
       this.males.forEach((value: Square, key: string) => {
-        if (value.age > this.maxage - this.random(1, this.maxage - this.minage)) {
-          console.log('a male died!');
-          this.ctrDeaths++;
-          this.ctrPopulation--;
-          value.die();
-          this.males.delete(key);
+        if (value.age > this.settings.maxage - this.random(1, this.settings.maxage - this.settings.minage)) {
+          this.letDie(key, value, true);
         } else {
-          value.move(this.random(1, this.moverange), this.random(1, 4));
+          value.move(this.random(1, this.settings.moverange), this.random(1, 4));
           // check collision with same gender
           const tmpkey = value.x + '_' + value.y;
           key = this.males.get(tmpkey) ? (collisioncounter++) + '_' + tmpkey : tmpkey;
@@ -105,21 +130,17 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
       });
 
       this.females.forEach((value: Square, key: string) => {
-        if (value.age > this.maxage - this.random(1, this.maxage - this.minage)) {
-          console.log('a female died!');
-          this.ctrDeaths++;
-          this.ctrPopulation--;
-          value.die();
-          this.females.delete(key);
+        if (value.age > this.settings.maxage - this.random(1, this.settings.maxage - this.settings.minage)) {
+          this.letDie(key, value);
         } else {
-          value.move(this.random(1, this.moverange), this.random(1, 4));
+          value.move(this.random(1, this.settings.moverange), this.random(1, 4));
           // check collision with same gender
           const tmpkey = value.x + '_' + value.y;
           key = this.females.get(tmpkey) ? (collisioncounter++) + '_' + tmpkey : tmpkey;
           // check collision with males => are children on the way?
           const male = this.findMale(value.x, value.y);
           if (male) {
-            if (value.age > this.pairingage && male.age > this.pairingage && this.attractionpossibility >= this.random(0, 100)) {
+            if (value.age > this.settings.pairingage && male.age > this.settings.pairingage && this.settings.attractionpossibility >= this.random(0, 100)) {
               const child = this.addChild(this.random(1, 2), male.x, male.y);
               this.ctrBirths++;
               console.log('a new child is born! Its a ' + (child.color === 'red' ? 'boy!' : 'girl!'));
@@ -129,12 +150,40 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
         }
       });
 
-    }, 100 - this.speed);
+      this.ctrYear++;
+
+    }, 100 - this.settings.speed);
+  }
+
+  letDie(key: string, value: Square, male?: boolean) {
+    console.log('a ' + (male ? 'male' : 'female') + ' died!');
+    this.ctrDeaths++;
+    this.ctrPopulation--;
+
+    value.die();
+
+    if (male) {
+      this.males.delete(key);
+    } else {
+      this.females.delete(key);
+    }
+
+    if (this.males.size === 0 && this.females.size === 0) {
+      this.stopCrowd();
+
+      const text = 'Your population seems to be extinct!';
+
+      const ctx = this.canvasElement.getContext('2d');
+      ctx.fillStyle = 'blue';
+      ctx.font = 'bold 16px Arial';
+      const textblock = ctx.measureText(text);
+      ctx.fillText(text, (this.width / 2) - (textblock.width / 2), (this.height / 2));
+    }
   }
 
   findMale(x: number, y: number): Square {
-    for (let i = x - this.attractionrange; i <= x + this.attractionrange; i++) {
-      for (let j = y - this.attractionrange; j <= y + this.attractionrange; j++) {
+    for (let i = x - this.settings.attractionrange; i <= x + this.settings.attractionrange; i++) {
+      for (let j = y - this.settings.attractionrange; j <= y + this.settings.attractionrange; j++) {
         const male = this.males.get(i + '_' + j);
         if (male) {
           return male;
@@ -151,14 +200,14 @@ export class CrowdPlaygroundComponent implements AfterViewInit {
   addChild(sex: number, x?: number, y?: number): Square {
     const ctx = this.canvasElement.getContext('2d');
 
-    const boundX = this.width / this.size - 1;
-    const boundY = this.height / this.size - 1;
+    const boundX = this.width / this.settings.size - 1;
+    const boundY = this.height / this.settings.size - 1;
 
     const square = new Square(
       ctx, boundX, boundY,
       x ? x : this.random(0, boundX),
       y ? y : this.random(0, boundY),
-      this.size,
+      this.settings.size,
       sex === 1 ? 'red' : 'black');
 
     const key: string = square.x + '_' + square.y;
